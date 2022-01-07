@@ -1,0 +1,52 @@
+#for graph
+library(scales) 
+library(ggplot2)
+pl <- ggplot(avail,aes(x=OBP,y=(salary)str(salaries))) + geom_point()+scale_y_continuous(labels = label_number(suffix = " M", scale = 1e-6))
+print(pl)
+
+-----------------------------------------------------------------
+#for finding possible replacment players
+batting <- read.csv('Batting.csv')  # putting excel file into data frame
+salaries <- read.csv('Salaries.csv') # putting excel file into data frame
+head(salaries)
+str(salaries)
+batting$playerID <- factor(batting$playerID)
+batting$teamID <- factor(batting$teamID)
+batting$lgID <- factor(batting$lgID)
+
+#filtering only players after  1985
+batting <- subset(batting,batting$yearID >= 1985)
+summary(batting)
+
+#Adding new columns namely Batting avg(BA),First base(X1B),Slugging avg(SLG) and On Base Percentage(OBP)
+batting$BA <- batting$H/batting$AB                            
+batting$X1B <- batting$H-batting$X2B-batting$X3B-batting$HR
+batting$SLG <- (batting$X1B + (2*batting$X2B) +(3*batting$X3B) + (4*batting$HR))/batting$AB
+batting$OBP <- (batting$BB+batting$HBP+batting$H)/(batting$AB+batting$BB+batting$HBP+batting$SF)
+summary(batting)
+
+#merging data frames salaries and players to their respective playerID's
+merge(batting,salaries,by.x = 'playerID',by.y = 'yearID')
+summary(batting)
+combo <- merge(batting,salaries,by=c('playerID','yearID'))
+summary(combo)
+
+#creating a data frame for the players lost in 2001 only and only selecting the columns required  
+lost_players <- subset(combo,playerID %in%c('damonjo01','giambja01','saenzol01'))
+lost_players
+lost_players <- subset(lost_players,yearID == 2001)
+lost_players <- select(lost_players,-c(stint,teamID.x,lgID.x,G,G_batting,RBI, SB, CS,BB,SO,IBB,HBP,SH,SF,GIDP,G_old, X1B,teamID.y,lgID.y))
+lost_players
+summary(lost_players)
+
+#Checking the available players for replacement assuming every player is a free agent in 2001 and setting salary cap at 8 million(given constraints max = 15 million combines 3 players)
+avail <- subset(combo,yearID==2001)
+avail <- subset(avail,salary < 8000000, OBP>2)
+avail <- subset(avail,AB>=500)
+
+#Selecting only top 10 players
+pos <- head(arrange(avail,desc(OBP)),10)
+pos <- pos[,c('playerID','OBP','AB','salary')]
+pos
+pos[2:4] since the first player in the data frame is the one being replaced along with 2 others 
+
